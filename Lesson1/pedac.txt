@@ -1,0 +1,11 @@
+input: string
+
+output: array with sub-strings
+
+Explicit Requiements:
+  -Every palindrome identified within the string will be placed inside an array
+  -Palindromes are case sensitive
+
+Implicit Requirements:
+  -If the string is blank, the array will be created but blank
+  -If there are no palindromes in the string, a black array will still be created
