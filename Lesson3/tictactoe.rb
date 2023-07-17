@@ -160,7 +160,7 @@ loop do
   end
   
   prompt "Score is Player: #{player_score} and Computer: #{computer_score}"
-  break if player_score == 5 || computer_score ==5
+  break if player_score == 5 || computer_score == 5
   
   prompt "Play again? (y or n)"
   answer = gets.chomp

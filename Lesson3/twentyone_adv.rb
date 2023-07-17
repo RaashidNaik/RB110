@@ -1,12 +1,9 @@
-require 'pry'
-require 'pry-byebug'
-
-# rubocop:disable Style/RedundantInterpolation
-
 SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"]
 CARD_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]
 CARD_NAMES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen'] +
              ['King', 'Ace']
+GAME_VALUE = 21
+DEALER_STAY = 17
 
 def prompt(msg)
   puts "=> #{msg}"
@@ -33,11 +30,21 @@ end
 def display_cards(dealer_cards, player_cards, both_stay = false)
   system 'clear'
   prompt "Dealer:"
-  prompt both_stay ? "#{dealer_cards.keys[0]}" : "Hidden Card"
-  dealer_cards.keys[1..-1].each { |card| prompt "#{card}" }
+  prompt both_stay ? dealer_cards.keys[0].to_s : "Hidden Card"
+  dealer_cards.keys[1..-1].each { |card| prompt card }
+  prompt ""
+  prompt "Sum of Cards(visible):"
+  if both_stay
+    prompt sum_of_cards(dealer_cards.values).to_s
+  else
+    prompt sum_of_cards(dealer_cards.values[1..-1]).to_s
+  end
   prompt ""
   prompt "Player:"
-  player_cards.keys.each { |card| prompt "#{card}" }
+  player_cards.keys.each { |card| prompt card }
+  prompt ""
+  prompt "Sum of Cards:"
+  prompt sum_of_cards(player_cards.values).to_s
   prompt ""
 end
 
@@ -57,80 +64,75 @@ def player_hit_or_stay!(full_deck, player_cards)
 end
 
 def dealer_hit_or_stay!(full_deck, dealer_cards)
-  if sum_of_cards(dealer_cards.values) < 17
+  if sum_of_cards(dealer_cards.values) < DEALER_STAY
     dealer_cards.merge!(deal_cards!(full_deck, 1))
   end
 end
 
-def sum_of_cards(hand_values)
-  aces = hand_values.count(11)
-  sum = hand_values.sum
-  if aces >= 1 && sum > 21
+def sum_of_cards(card_values)
+  aces = card_values.count(11)
+  sum = card_values.sum
+  if aces >= 1 && sum > GAME_VALUE
     loop do
       sum -= 10
       aces -= 1
-      break if sum <= 21 || aces == 0
+      break if sum <= GAME_VALUE || aces == 0
     end
   end
   sum
 end
 
-def check_winner(dealer, player)
-  dealer_diff = 21 - sum_of_cards(dealer.values)
-  player_diff = 21 - sum_of_cards(player.values)
+def check_winner(dealer_cards, player_cards)
+  dealer_diff = GAME_VALUE - sum_of_cards(dealer_cards.values)
+  player_diff = GAME_VALUE - sum_of_cards(player_cards.values)
   if dealer_diff < 0 && player_diff > 0
-    prompt "Player wins!"
     "Player"
   elsif dealer_diff > 0 && player_diff < 0
-    prompt "Dealer wins!"
     "Dealer"
   elsif dealer_diff > player_diff
-    prompt "Player wins!"
     "Player"
   elsif dealer_diff < player_diff
-    prompt "Dealer wins!"
     "Dealer"
-  else
-    prompt "It's a tie!"
   end
 end
 
+dealer_score = 0
+player_score = 0
+
 loop do
   full_deck = initialize_deck
-  dealer_score = 0
-  player_score = 0
   dealer_cards = deal_cards!(full_deck, 2)
   player_cards = deal_cards!(full_deck, 2)
   display_cards(dealer_cards, player_cards)
 
   loop do
+    # Comparing deck sizes at beginning and end to see if both players stay
     initial_deck_size = full_deck.size
+
+    # Player hits or stays
     player_hit_or_stay!(full_deck, player_cards)
     display_cards(dealer_cards, player_cards)
-    # If the player sum_of_cards is over 21 we have to tell them it's a bust
-    if sum_of_cards(player_cards.values) > 21
+    if sum_of_cards(player_cards.values) > GAME_VALUE
       prompt "Bust! You lose!"
+      dealer_score += 1
       break
     end
 
+    # Dealer hits or stays
     dealer_hit_or_stay!(full_deck, dealer_cards)
     display_cards(dealer_cards, player_cards)
-    # If the dealers sum_of_cards is over 21 it's a bust
-    if sum_of_cards(dealer_cards.values) > 21
+    if sum_of_cards(dealer_cards.values) > GAME_VALUE
       prompt "Dealer busts!  You win!"
+      player_score += 1
       break
     end
 
     final_deck_size = full_deck.size
 
-    if final_deck_size == initial_deck_size # Player and dealer both stay
-      both_stay = true # Used to display the dealer's first card
+    # When both player and dealer stay the deck size does not change
+    if final_deck_size == initial_deck_size
+      both_stay = true
       display_cards(dealer_cards, player_cards, both_stay)
-      prompt "Sum of Dealer Cards:"
-      prompt "#{sum_of_cards(dealer_cards.values)}"
-      prompt " "
-      prompt "Sum of Player Cards:"
-      prompt "#{sum_of_cards(player_cards.values)}"
       winner = check_winner(dealer_cards, player_cards)
       if winner == 'Player'
         prompt "#{winner} wins!"
@@ -144,10 +146,10 @@ loop do
       break
     end
   end
-  
+
   prompt "Dealer Score: #{dealer_score}"
   prompt "Player Score: #{player_score}"
-  
+
   if dealer_score == 5
     prompt "Dealer ultimate winner!"
     break
@@ -160,5 +162,3 @@ loop do
   play_again = gets.chomp
   break if !play_again.downcase.start_with?('y')
 end
-
-# rubocop:enable Style/RedundantInterpolation
