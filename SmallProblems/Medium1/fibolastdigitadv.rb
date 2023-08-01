@@ -11,8 +11,6 @@ end
 def fibonacci_last(num)
   idx = num % 60 - 1
   sequence[idx]
-  # fib_arr = sequence
-  # fib_arr[idx]
 end
 
 p fibonacci_last(123_456_789_987_745)
